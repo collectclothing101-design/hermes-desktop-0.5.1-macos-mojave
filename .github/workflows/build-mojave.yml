@@ -1,0 +1,48 @@
+name: Build macOS x64 (Mojave-compatible)
+
+# Builds the Electron-26 / x64 app on GitHub's free Intel macOS runner.
+# The resulting .dmg/.zip targets macOS 10.14.6 (minimumSystemVersion) and
+# runs on Mojave even though the runner itself is macOS 15.
+#
+# Run it: push this repo to GitHub, open the Actions tab, pick this workflow,
+# click "Run workflow". When it finishes, download the artifact at the bottom
+# of the run page, copy the .dmg to your Mojave Mac, and open it.
+
+on:
+  workflow_dispatch: {}      # manual "Run workflow" button
+  push:
+    branches: [main, master]
+
+jobs:
+  build-mac-x64:
+    runs-on: macos-15-intel  # the free Intel (x86_64) runner; valid until Aug 2027
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 20 (build toolchain needs >= 20.19)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies (rebuilds better-sqlite3 for Electron 26)
+        run: npm install
+
+      - name: Force native module to Electron 26 ABI (x64)
+        run: npm run rebuild:native
+
+      - name: Build + package x64 (dmg + zip)
+        run: npm run build:mac:x64
+        env:
+          # No signing/notarization for a personal build.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hermes-agent-macos-x64
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: error
