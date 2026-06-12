@@ -1,21 +1,13 @@
 name: Build macOS x64 (Mojave-compatible)
 
-# Builds the Electron-26 / x64 app on GitHub's free Intel macOS runner.
-# The resulting .dmg/.zip targets macOS 10.14.6 (minimumSystemVersion) and
-# runs on Mojave even though the runner itself is macOS 15.
-#
-# Run it: push this repo to GitHub, open the Actions tab, pick this workflow,
-# click "Run workflow". When it finishes, download the artifact at the bottom
-# of the run page, copy the .dmg to your Mojave Mac, and open it.
-
 on:
-  workflow_dispatch: {}      # manual "Run workflow" button
+  workflow_dispatch: {}
   push:
     branches: [main, master]
 
 jobs:
   build-mac-x64:
-    runs-on: macos-15-intel  # the free Intel (x86_64) runner; valid until Aug 2027
+    runs-on: macos-15-intel
 
     steps:
       - name: Checkout
@@ -33,10 +25,10 @@ jobs:
         run: npm run rebuild:native
 
       - name: Build + package x64 (dmg + zip)
-        run: npm run build:mac:x64
+        run: npx electron-vite build && npx electron-builder --mac --x64 --publish never
         env:
-          # No signing/notarization for a personal build.
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          GH_TOKEN: ""
 
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4
